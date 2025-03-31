@@ -1,83 +1,90 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, date, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Worker schema
-export const workers = pgTable("workers", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  ssn: text("ssn").notNull(),
-  wageType: text("wage_type").notNull(), // "hourly" or "daily"
-  wageAmount: integer("wage_amount").notNull(), // In KRW
-  projectId: integer("project_id").notNull(),
-});
-
-// Project schema
+// 프로젝트 테이블
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  month: text("month").notNull(), // Format: YYYY-MM
+  month: varchar("month", { length: 7 }).notNull(), // YYYY-MM 형식 (예: 2023-05)
   fileName: text("file_name").notNull(),
-  uploadDate: timestamp("upload_date").notNull().defaultNow(),
-  status: text("status").notNull().default("completed"), // "completed", "processing", "error"
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
 });
 
-// Work hours schema
-export const workHours = pgTable("work_hours", {
+// 근로자 테이블
+export const workers = pgTable("workers", {
   id: serial("id").primaryKey(),
-  workerId: integer("worker_id").notNull(),
-  projectId: integer("project_id").notNull(),
-  date: text("date").notNull(), // Format: YYYY-MM-DD
-  hours: integer("hours").notNull(), // In hours or 1 for daily wage
+  projectId: integer("project_id").notNull().references(() => projects.id),
+  name: text("name").notNull(),
+  ssn: text("ssn").notNull(), // 주민등록번호 (마스킹 처리)
+  wageType: text("wage_type").notNull(), // 시급 또는 일급
+  wageAmount: integer("wage_amount").notNull(), // 시급 또는 일급 금액
 });
 
-// Calculation results schema
-export const calculationResults = pgTable("calculation_results", {
+// 근무 기록 테이블
+export const workRecords = pgTable("work_records", {
   id: serial("id").primaryKey(),
-  workerId: integer("worker_id").notNull(),
-  projectId: integer("project_id").notNull(),
-  totalWage: integer("total_wage").notNull(), // In KRW
+  workerId: integer("worker_id").notNull().references(() => workers.id),
+  date: date("date").notNull(),
+  hours: integer("hours").notNull(), // 근무 시간
+});
+
+// 계산 결과 테이블
+export const calculations = pgTable("calculations", {
+  id: serial("id").primaryKey(),
+  workerId: integer("worker_id").notNull().references(() => workers.id),
   totalHours: integer("total_hours").notNull(),
+  baseWage: integer("base_wage").notNull(),
+  overtimePay: integer("overtime_pay").notNull(),
+  nightPay: integer("night_pay").notNull(),
+  weeklyHolidayPay: integer("weekly_holiday_pay").notNull(),
+  totalWage: integer("total_wage").notNull(),
 });
 
-// Insert schemas
-export const insertWorkerSchema = createInsertSchema(workers).omit({ id: true });
-export const insertProjectSchema = createInsertSchema(projects).omit({ id: true });
-export const insertWorkHourSchema = createInsertSchema(workHours).omit({ id: true });
-export const insertCalculationResultSchema = createInsertSchema(calculationResults).omit({ id: true });
+// 프로젝트 삽입 스키마
+export const insertProjectSchema = createInsertSchema(projects).omit({
+  id: true,
+  uploadedAt: true,
+});
 
-// Insert types
-export type InsertWorker = z.infer<typeof insertWorkerSchema>;
+// 근로자 삽입 스키마
+export const insertWorkerSchema = createInsertSchema(workers).omit({
+  id: true,
+});
+
+// 근무 기록 삽입 스키마
+export const insertWorkRecordSchema = createInsertSchema(workRecords).omit({
+  id: true,
+});
+
+// 계산 결과 삽입 스키마
+export const insertCalculationSchema = createInsertSchema(calculations).omit({
+  id: true,
+});
+
+// 엑셀 업로드 스키마 - 프로젝트 정보와 파일
+export const excelUploadSchema = z.object({
+  projectName: z.string().min(1, "프로젝트명은 필수 입력항목입니다."),
+  workMonth: z.string().regex(/^\d{4}-\d{2}$/, "올바른 형식의 년월(YYYY-MM)을 입력해주세요."),
+});
+
 export type InsertProject = z.infer<typeof insertProjectSchema>;
-export type InsertWorkHour = z.infer<typeof insertWorkHourSchema>;
-export type InsertCalculationResult = z.infer<typeof insertCalculationResultSchema>;
+export type InsertWorker = z.infer<typeof insertWorkerSchema>;
+export type InsertWorkRecord = z.infer<typeof insertWorkRecordSchema>;
+export type InsertCalculation = z.infer<typeof insertCalculationSchema>;
+export type ExcelUpload = z.infer<typeof excelUploadSchema>;
 
-// Select types
-export type Worker = typeof workers.$inferSelect;
 export type Project = typeof projects.$inferSelect;
-export type WorkHour = typeof workHours.$inferSelect;
-export type CalculationResult = typeof calculationResults.$inferSelect;
+export type Worker = typeof workers.$inferSelect;
+export type WorkRecord = typeof workRecords.$inferSelect;
+export type Calculation = typeof calculations.$inferSelect;
 
-// Extended types for frontend use
-export type WorkerWithHours = Worker & {
-  workHours: Record<string, number>; // day: hours
-  totalWage: number;
+// 프론트엔드에 표시될 결과 타입 (조인된 데이터)
+export type WorkerWithCalculation = Worker & {
+  calculation: Calculation;
+  dailyHours: Record<string, number>; // 날짜별 근무시간
 };
 
 export type ProjectWithWorkers = Project & {
-  workers: WorkerWithHours[];
-  summary: {
-    totalEmployees: number;
-    totalHours: number;
-    totalWages: number;
-  };
+  workers: WorkerWithCalculation[];
 };
-
-// Upload file schema
-export const uploadFileSchema = z.object({
-  projectName: z.string().min(1, { message: "프로젝트 이름을 입력해주세요." }),
-  projectMonth: z.string().regex(/^\d{4}-\d{2}$/, { message: "올바른 형식의 월을 입력해주세요 (YYYY-MM)." }),
-  file: z.instanceof(File, { message: "파일을 업로드해주세요." })
-});
-
-export type UploadFileData = z.infer<typeof uploadFileSchema>;
