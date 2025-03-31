@@ -194,9 +194,18 @@ export default function ResultsTable({
 
               {/* 일자별 컬럼 */}
               {days.map((day) => {
-                const [year, month] = project.month.split("-"); // Changed to project.month
+                const [year, month] = project.month.split("-");
                 const date = new Date(parseInt(year), parseInt(month) - 1, day);
                 const dayOfWeek = new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(date);
+                return (
+                  <th
+                    key={day}
+                    scope="col"
+                    className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider whitespace-nowrap"
+                  >
+                    {`${parseInt(month)}월 ${day}일 (${dayOfWeek})`}
+                  </th>
+                );te);
                 return (
                   <th
                     key={day}
