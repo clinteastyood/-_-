@@ -278,14 +278,13 @@ export default function ResultsTable({
 
                 {/* 일자별 근무시간 */}
                 {days.map((day) => {
-                  const dayStr = day.toString().padStart(2, '0');
-                  const workData = worker.dailyHours[dayStr];
+                  const workData = worker.dailyHours[day.toString()]; // Corrected line
                   return (
                     <td
                       key={day}
                       className="px-3 py-4 text-sm text-neutral-500 text-center whitespace-nowrap"
                     >
-                      {workData ? (workData.status || workData.hours || "-") : "-"}
+                      {workData ? (workData.hours || workData.status) : "-"}
                     </td>
                   );
                 })}
