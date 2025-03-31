@@ -15,7 +15,7 @@ interface ResultsTableProps {
   project: {
     id: number;
     name: string;
-    month: string; // Changed to month
+    formattedMonth: string;
     fileName: string;
     uploadedAt: string;
   };
@@ -115,7 +115,7 @@ export default function ResultsTable({
       // 파일 다운로드
       XLSX.writeFile(
         workbook,
-        `${project.name}_${project.month}_급여계산결과.xlsx`, // Changed to project.month
+        `${project.name}_${project.formattedMonth}_급여계산결과.xlsx`,
       );
     } catch (error) {
       console.error("Excel 다운로드 에러:", error);
@@ -138,7 +138,7 @@ export default function ResultsTable({
               급여 계산 결과
             </h2>
             <p className="mt-1 text-sm text-neutral-400">
-              {project.name} - {project.month} {/* Changed to project.month */}
+              {project.name} - {project.formattedMonth}
             </p>
           </div>
           <div className="mt-4 sm:mt-0 space-y-2 sm:space-y-0 sm:space-x-2 flex flex-col sm:flex-row">
@@ -193,29 +193,16 @@ export default function ResultsTable({
               </th>
 
               {/* 일자별 컬럼 */}
-              {days.map((day) => {
-                const [year, month] = project.month.split("-");
-                const date = new Date(parseInt(year), parseInt(month) - 1, day);
-                const dayOfWeek = new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(date);
-                return (
-                  <th
-                    key={day}
-                    scope="col"
-                    className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider whitespace-nowrap"
-                  >
-                    {`${parseInt(month)}월 ${day}일 (${dayOfWeek})`}
-                  </th>
-                );te);
-                return (
-                  <th
-                    key={day}
-                    scope="col"
-                    className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider w-12 whitespace-nowrap"
-                  >
-                    {`${month + 1}월 ${day}일 (${dayOfWeek})`} {/* Month is 0-indexed, add 1 */}
-                  </th>
-                );
-              })}
+              {days.map((day) => (
+                <th
+                  key={day}
+                  scope="col"
+                  className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider w-12"
+                >
+                  {project.formattedMonth.replace("년 ", "/").replace("월", "")}
+                  /{day}
+                </th>
+              ))}
 
               <th
                 scope="col"
