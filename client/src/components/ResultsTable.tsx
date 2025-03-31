@@ -281,28 +281,28 @@ export default function ResultsTable({
                 ))}
 
                 <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
-                  {worker.calculation.totalHours}
+                  {worker.calculation.totalHours || 0}
                 </td>
                 <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
-                  {formatCurrency(worker.calculation.baseWage)}
+                  {formatCurrency(worker.calculation.baseWage || 0)}
                 </td>
                 <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
-                  {formatCurrency(worker.calculation.weeklyHolidayPay)}
+                  {formatCurrency(worker.calculation.weeklyHolidayPay || 0)}
                 </td>
                 <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
-                  {formatCurrency(worker.calculation.overtimePay)}
+                  {formatCurrency(worker.calculation.overtimePay || 0)}
                 </td>
                 <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
-                  {formatCurrency(worker.calculation.holidayPay)}
+                  {formatCurrency(worker.calculation.holidayPay || 0)}
                 </td>
                 <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
-                  {formatCurrency(worker.calculation.holidayOvertimePay)}
+                  {formatCurrency(worker.calculation.holidayOvertimePay || 0)}
                 </td>
                 <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
-                  {formatCurrency(worker.calculation.publicHolidayPay)}
+                  {formatCurrency(worker.calculation.publicHolidayPay || 0)}
                 </td>
                 <td className="px-3 py-4 text-sm font-medium text-neutral-700 whitespace-nowrap text-right bg-primary bg-opacity-5 border-l border-r border-primary-light">
-                  {formatCurrency(worker.calculation.totalWage)}
+                  {formatCurrency(worker.calculation.totalWage || 0)}
                 </td>
               </tr>
             ))}
