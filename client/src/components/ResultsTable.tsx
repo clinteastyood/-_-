@@ -193,16 +193,20 @@ export default function ResultsTable({
               </th>
 
               {/* 일자별 컬럼 */}
-              {days.map((day) => (
-                <th
-                  key={day}
-                  scope="col"
-                  className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider w-12"
-                >
-                  {project.formattedMonth.replace("년 ", "/").replace("월", "")}
-                  /{day}
-                </th>
-              ))}
+              {days.map((day) => {
+                const [year, month] = project.formattedMonth.split("년 ")[0].split("/");
+                const date = new Date(parseInt(year), parseInt(month) - 1, day);
+                const dayOfWeek = new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(date);
+                return (
+                  <th
+                    key={day}
+                    scope="col"
+                    className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider w-12 whitespace-nowrap"
+                  >
+                    {`${month}월 ${day}일 (${dayOfWeek})`}
+                  </th>
+                );
+              })}
 
               <th
                 scope="col"
