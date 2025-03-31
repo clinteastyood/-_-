@@ -6,7 +6,8 @@ import { z } from "zod";
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  month: varchar("month", { length: 7 }).notNull(), // YYYY-MM 형식 (예: 2023-05)
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
   fileName: text("file_name").notNull(),
   uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
 });
