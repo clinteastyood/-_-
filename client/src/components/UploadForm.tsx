@@ -6,7 +6,7 @@ import { excelUploadSchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { readExcelFile, validateExcelData } from "@/lib/excelUtils";
+import { readExcelFile, validateExcelData, downloadExcelTemplate } from "@/lib/excelUtils";
 import { 
   Form,
   FormControl,
@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, FileDown, Upload } from "lucide-react";
 
 interface UploadFormProps {
   setIsLoading: (isLoading: boolean) => void;
@@ -221,7 +221,19 @@ export default function UploadForm({ setIsLoading, setActiveTab }: UploadFormPro
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-500">엑셀 파일 업로드</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-neutral-500">엑셀 파일 업로드</label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs flex items-center gap-1"
+                  onClick={() => downloadExcelTemplate(form.getValues("workMonth"))}
+                >
+                  <FileDown className="h-3.5 w-3.5" />
+                  템플릿 다운로드
+                </Button>
+              </div>
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-100 border-dashed rounded-md">
                 <div className="space-y-1 text-center">
                   <svg className="mx-auto h-12 w-12 text-neutral-300" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">

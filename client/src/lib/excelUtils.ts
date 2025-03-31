@@ -67,3 +67,102 @@ export const validateExcelData = (data: Record<string, any>[]): { isValid: boole
   
   return { isValid: true };
 };
+
+// 템플릿 엑셀 파일 생성 및 다운로드 함수
+export const downloadExcelTemplate = (month: string = ""): void => {
+  try {
+    // 워크북 생성
+    const workbook = XLSX.utils.book_new();
+    
+    // 헤더 생성
+    const headers = ["이름", "주민번호", "임금유형", "임금액"];
+    
+    // 현재 월이나 지정된 월의 일수에 맞게 날짜 컬럼 추가
+    let year = new Date().getFullYear();
+    let monthNum = new Date().getMonth() + 1; // 0-based 이므로 +1
+    
+    // 사용자가 지정한 월이 있으면 사용
+    if (month) {
+      const parts = month.split("-");
+      if (parts.length === 2) {
+        year = parseInt(parts[0]);
+        monthNum = parseInt(parts[1]);
+      }
+    }
+    
+    // 해당 월의 일수 계산
+    const daysInMonth = new Date(year, monthNum, 0).getDate();
+    
+    // 날짜 컬럼 추가
+    for (let day = 1; day <= daysInMonth; day++) {
+      headers.push(`${day}일`);
+    }
+    
+    // 예시 데이터 타입 정의
+    interface WorkerData {
+      이름: string;
+      주민번호: string;
+      임금유형: string;
+      임금액: number;
+      [key: string]: string | number; // 날짜별 근무시간을 위한 인덱스 시그니처
+    }
+    
+    // 예시 데이터
+    const sampleData: WorkerData[] = [
+      {
+        "이름": "홍길동",
+        "주민번호": "901201-1******",
+        "임금유형": "시급",
+        "임금액": 9620,
+      },
+      {
+        "이름": "김철수",
+        "주민번호": "880505-1******",
+        "임금유형": "일급",
+        "임금액": 80000,
+      }
+    ];
+    
+    // 샘플 데이터에 날짜별 근무시간 추가 (비어있는 상태로)
+    sampleData.forEach(row => {
+      for (let day = 1; day <= daysInMonth; day++) {
+        row[`${day}일`] = 0; // 기본값 0시간
+      }
+      
+      // 간단한 예시 데이터 (첫 번째 행만)
+      if (row["이름"] === "홍길동") {
+        row["1일"] = 8;
+        row["2일"] = 8;
+        row["3일"] = 8;
+        row["4일"] = 8;
+        row["5일"] = 8;
+      }
+    });
+    
+    // 워크시트 생성
+    const worksheet = XLSX.utils.json_to_sheet(sampleData, { header: headers });
+    
+    // 열 너비 설정
+    const columnWidths = [
+      { wch: 10 },  // 이름
+      { wch: 15 },  // 주민번호
+      { wch: 8 },   // 임금유형
+      { wch: 10 },  // 임금액
+    ];
+    
+    // 날짜 열 너비 설정
+    for (let i = 0; i < daysInMonth; i++) {
+      columnWidths.push({ wch: 5 });
+    }
+    
+    worksheet["!cols"] = columnWidths;
+    
+    // 워크북에 워크시트 추가
+    XLSX.utils.book_append_sheet(workbook, worksheet, "근무시간");
+    
+    // 파일 다운로드
+    XLSX.writeFile(workbook, `근무시간_템플릿_${year}-${monthNum.toString().padStart(2, '0')}.xlsx`);
+  } catch (error) {
+    console.error("템플릿 생성 중 오류 발생:", error);
+  }
+};
