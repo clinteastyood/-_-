@@ -15,7 +15,7 @@ interface ResultsTableProps {
   project: {
     id: number;
     name: string;
-    formattedMonth: string;
+    month: string; // Changed to month
     fileName: string;
     uploadedAt: string;
   };
@@ -115,7 +115,7 @@ export default function ResultsTable({
       // 파일 다운로드
       XLSX.writeFile(
         workbook,
-        `${project.name}_${project.formattedMonth}_급여계산결과.xlsx`,
+        `${project.name}_${project.month}_급여계산결과.xlsx`, // Changed to project.month
       );
     } catch (error) {
       console.error("Excel 다운로드 에러:", error);
@@ -138,7 +138,7 @@ export default function ResultsTable({
               급여 계산 결과
             </h2>
             <p className="mt-1 text-sm text-neutral-400">
-              {project.name} - {project.formattedMonth}
+              {project.name} - {project.month} {/* Changed to project.month */}
             </p>
           </div>
           <div className="mt-4 sm:mt-0 space-y-2 sm:space-y-0 sm:space-x-2 flex flex-col sm:flex-row">
@@ -194,7 +194,7 @@ export default function ResultsTable({
 
               {/* 일자별 컬럼 */}
               {days.map((day) => {
-                const [year, month] = project.formattedMonth.split("년 ")[0].split("/");
+                const [year, month] = project.month.split("-"); // Changed to project.month
                 const date = new Date(parseInt(year), parseInt(month) - 1, day);
                 const dayOfWeek = new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(date);
                 return (
@@ -203,7 +203,7 @@ export default function ResultsTable({
                     scope="col"
                     className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider w-12 whitespace-nowrap"
                   >
-                    {`${month}월 ${day}일 (${dayOfWeek})`}
+                    {`${month + 1}월 ${day}일 (${dayOfWeek})`} {/* Month is 0-indexed, add 1 */}
                   </th>
                 );
               })}
