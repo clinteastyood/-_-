@@ -35,10 +35,11 @@ export function calculateHolidayWage(hourlyRate: number, holidayHours: number): 
 /**
  * Check if a date is a legal holiday in Korea
  */
+import { HolidayKR } from 'holidays-kr';
+
 export function isKoreanHoliday(date: Date): boolean {
-  // This would implement logic to check Korean holidays
-  // For now, this is a placeholder
-  return false;
+  const holidayKR = new HolidayKR();
+  return holidayKR.isHoliday(date);
 }
 
 /**
