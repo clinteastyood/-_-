@@ -34,6 +34,9 @@ interface ResultsTableProps {
       nightPay: number;
       weeklyHolidayPay: number;
       totalWage: number;
+      holidayPay: number;
+      holidayOvertimePay: number;
+      publicHolidayPay: number;
     };
   }[];
 }
@@ -67,9 +70,11 @@ export default function ResultsTable({
         // 계산 결과 추가
         row["총 근무시간"] = worker.calculation.totalHours;
         row["기본급"] = worker.calculation.baseWage;
-        row["연장수당"] = worker.calculation.overtimePay;
-        row["야간수당"] = worker.calculation.nightPay;
         row["주휴수당"] = worker.calculation.weeklyHolidayPay;
+        row["연장수당"] = worker.calculation.overtimePay;
+        row["휴일수당"] = worker.calculation.holidayPay;
+        row["휴일연장수당"] = worker.calculation.holidayOvertimePay;
+        row["공휴일수당"] = worker.calculation.publicHolidayPay;
         row["최종 급여"] = worker.calculation.totalWage;
 
         return row;
@@ -97,9 +102,11 @@ export default function ResultsTable({
       columnWidths.push(
         { wch: 10 }, // 총 근무시간
         { wch: 12 }, // 기본급
-        { wch: 12 }, // 연장수당
-        { wch: 12 }, // 야간수당
         { wch: 12 }, // 주휴수당
+        { wch: 12 }, // 연장수당
+        { wch: 12 }, // 휴일수당
+        { wch: 12 }, // 휴일연장수당
+        { wch: 12 }, // 공휴일수당
         { wch: 12 }, // 최종 급여
       );
 
@@ -213,19 +220,31 @@ export default function ResultsTable({
                 scope="col"
                 className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider whitespace-nowrap"
               >
+                주휴수당
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider whitespace-nowrap"
+              >
                 연장수당
               </th>
               <th
                 scope="col"
                 className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider whitespace-nowrap"
               >
-                야간수당
+                휴일수당
               </th>
               <th
                 scope="col"
                 className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider whitespace-nowrap"
               >
-                주휴수당
+                휴일연장수당
+              </th>
+              <th
+                scope="col"
+                className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider whitespace-nowrap"
+              >
+                공휴일수당
               </th>
               <th
                 scope="col"
@@ -268,13 +287,19 @@ export default function ResultsTable({
                   {formatCurrency(worker.calculation.baseWage)}
                 </td>
                 <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
+                  {formatCurrency(worker.calculation.weeklyHolidayPay)}
+                </td>
+                <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
                   {formatCurrency(worker.calculation.overtimePay)}
                 </td>
                 <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
-                  {formatCurrency(worker.calculation.nightPay)}
+                  {formatCurrency(worker.calculation.holidayPay)}
                 </td>
                 <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
-                  {formatCurrency(worker.calculation.weeklyHolidayPay)}
+                  {formatCurrency(worker.calculation.holidayOvertimePay)}
+                </td>
+                <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
+                  {formatCurrency(worker.calculation.publicHolidayPay)}
                 </td>
                 <td className="px-3 py-4 text-sm font-medium text-neutral-700 whitespace-nowrap text-right bg-primary bg-opacity-5 border-l border-r border-primary-light">
                   {formatCurrency(worker.calculation.totalWage)}
