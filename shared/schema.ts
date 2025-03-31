@@ -23,11 +23,22 @@ export const workers = pgTable("workers", {
 });
 
 // 근무 기록 테이블
+export const WorkStatus = {
+  WORK: '근무',
+  RAIN: '우천',
+  REGULAR_HOLIDAY: '정휴',
+  ABSENCE: '결근',
+  PUBLIC_HOLIDAY: '공휴일'
+} as const;
+
+export type WorkStatusType = typeof WorkStatus[keyof typeof WorkStatus];
+
 export const workRecords = pgTable("work_records", {
   id: serial("id").primaryKey(),
   workerId: integer("worker_id").notNull().references(() => workers.id),
   date: date("date").notNull(),
-  hours: integer("hours").notNull(), // 근무 시간
+  hours: integer("hours"), // Optional now since some statuses don't have hours
+  status: text("status").notNull().$type<WorkStatusType>(), // Work status
 });
 
 // 계산 결과 테이블

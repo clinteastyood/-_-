@@ -18,6 +18,7 @@ interface ResultsTableProps {
     formattedMonth: string;
     fileName: string;
     uploadedAt: string;
+    month: string; // Added month property
   };
   days: number[];
   workers: {
@@ -26,7 +27,7 @@ interface ResultsTableProps {
     ssn: string;
     wageType: string;
     wageAmount: number;
-    dailyHours: Record<string, number>;
+    dailyWork: Record<string, { hours?: number; status?: string }>; // Changed to dailyWork
     calculation: {
       totalHours: number;
       baseWage: number;
@@ -64,7 +65,8 @@ export default function ResultsTable({
 
         // 일자별 근무시간 추가
         days.forEach((day) => {
-          row[`${day}일`] = worker.dailyHours[day.toString()] || 0;
+          const workData = worker.dailyWork[day.toString()];
+          row[`${day}일`] = workData ? (workData.hours || workData.status) : "-";
         });
 
         // 계산 결과 추가
@@ -95,7 +97,7 @@ export default function ResultsTable({
 
       // 일자별 열 너비
       days.forEach(() => {
-        columnWidths.push({ wch: 5 });
+        columnWidths.push({ wch: 8 }); // Adjusted width
       });
 
       // 계산 결과 열 너비
@@ -193,16 +195,20 @@ export default function ResultsTable({
               </th>
 
               {/* 일자별 컬럼 */}
-              {days.map((day) => (
-                <th
-                  key={day}
-                  scope="col"
-                  className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider w-12"
-                >
-                  {project.formattedMonth.replace("년 ", "/").replace("월", "")}
-                  /{day}
-                </th>
-              ))}
+              {days.map((day) => {
+                const [year, month] = project.month.split("-");
+                const date = new Date(parseInt(year), parseInt(month) - 1, day);
+                const dayOfWeek = new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(date);
+                return (
+                  <th
+                    key={day}
+                    scope="col"
+                    className="px-3 py-3 text-center text-xs font-medium text-neutral-400 tracking-wider w-16 whitespace-nowrap"
+                  >
+                    {`${parseInt(month)}월 ${day}일 (${dayOfWeek})`}
+                  </th>
+                );
+              })}
 
               <th
                 scope="col"
@@ -271,14 +277,17 @@ export default function ResultsTable({
                 </td>
 
                 {/* 일자별 근무시간 */}
-                {days.map((day) => (
-                  <td
-                    key={day}
-                    className="px-3 py-4 text-sm text-neutral-500 text-center"
-                  >
-                    {worker.dailyHours[day.toString()] || 0}
-                  </td>
-                ))}
+                {days.map((day) => {
+                  const workData = worker.dailyWork[day.toString()];
+                  return (
+                    <td
+                      key={day}
+                      className="px-3 py-4 text-sm text-neutral-500 text-center whitespace-nowrap"
+                    >
+                      {workData ? (workData.hours || workData.status) : "-"}
+                    </td>
+                  );
+                })}
 
                 <td className="px-3 py-4 text-sm text-neutral-500 whitespace-nowrap text-right">
                   {worker.calculation.totalHours || 0}
