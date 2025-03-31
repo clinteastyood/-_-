@@ -27,7 +27,7 @@ interface ResultsTableProps {
     ssn: string;
     wageType: string;
     wageAmount: number;
-    dailyWork: Record<string, { hours?: number; status?: string }>; // Changed to dailyWork
+    dailyHours: Record<string, { hours?: number; status?: string }>; // Changed to dailyHours
     calculation: {
       totalHours: number;
       baseWage: number;
@@ -65,7 +65,7 @@ export default function ResultsTable({
 
         // 일자별 근무시간 추가
         days.forEach((day) => {
-          const workData = worker.dailyWork[day.toString()];
+          const workData = worker.dailyHours[day.toString()]; // Corrected line
           row[`${day}일`] = workData ? (workData.hours || workData.status) : "-";
         });
 
@@ -278,7 +278,7 @@ export default function ResultsTable({
 
                 {/* 일자별 근무시간 */}
                 {days.map((day) => {
-                  const workData = worker.dailyWork[day.toString()];
+                  const workData = worker.dailyHours[day.toString()]; // Corrected line
                   return (
                     <td
                       key={day}
