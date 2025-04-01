@@ -19,7 +19,7 @@ interface DailyWork {
   hours: number;
 }
 
-// 주간 근무 시간 계산을 위한 인터페이스
+// 주간 근무 시간 계산을 위한 인터페이스 // 수정필요! absencedays = irrelevant; publicholidayHours: number; rainOffHours: number; regularOffHours: number 등등 계산식과 규칙에 따라가야함. 
 interface WeeklyWork {
   regularHours: number;
   weekendRegularHours: number;
