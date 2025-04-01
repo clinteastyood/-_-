@@ -218,6 +218,14 @@ export default function DailyWageBreakdownTable({
                   </th>
                 );
               })}
+              
+              {/* 합계 열 */}
+              <th
+                scope="col"
+                className="px-3 py-3 text-center text-xs font-medium text-neutral-400 uppercase tracking-wider whitespace-nowrap bg-neutral-100"
+              >
+                총 시간
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-neutral-100">
@@ -265,6 +273,11 @@ export default function DailyWageBreakdownTable({
                     </td>
                   );
                 })}
+                
+                {/* 총 시간 합계 */}
+                <td className="px-3 py-4 text-sm font-medium text-neutral-700 whitespace-nowrap text-right bg-neutral-100">
+                  {worker.calculation.totalHours.toFixed(1)}시간
+                </td>
               </tr>
             ))}
           </tbody>
