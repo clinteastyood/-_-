@@ -27,7 +27,7 @@ interface ResultsTableProps {
     ssn: string;
     wageType: string;
     wageAmount: number;
-    dailyHours: Record<string, number | string>;
+    dailyHours: Record<string, number | string | { regular: number; overtime: number; holiday: number; holidayOvertime: number; publicHoliday: number; }>;
     calculation: {
       totalHours: number;
       baseWage: number;
@@ -279,23 +279,11 @@ export default function ResultsTable({
                 {/* 일자별 근무시간 */}
                 {days.map((day) => {
                   const workData = worker.dailyHours[day.toString()];
-                  
-                  // Handle special statuses (우천, 결근, 휴무, 정휴)
-                  if (typeof workData === 'string') {
-                    return (
-                      <td
-                        key={day}
-                        className="px-3 py-4 text-sm text-neutral-500 text-center whitespace-nowrap"
-                      >
-                        {workData}
-                      </td>
-                    );
-                  }
 
                   // Handle work hours with types
                   if (typeof workData === 'object' && workData !== null) {
                     const parts = [];
-                    
+
                     if (workData.regular > 0) {
                       parts.push(`기본 ${workData.regular.toFixed(1)}`);
                     }
@@ -311,13 +299,25 @@ export default function ResultsTable({
                     if (workData.publicHoliday > 0) {
                       parts.push(`공휴일 ${workData.publicHoliday.toFixed(1)}`);
                     }
-                    
+
                     return (
                       <td
                         key={day}
                         className="px-3 py-4 text-sm text-neutral-500 text-center whitespace-nowrap"
                       >
                         {parts.length > 0 ? parts.join(' + ') : '-'}
+                      </td>
+                    );
+                  }
+
+                  // Handle status strings (휴무, 정휴, etc)
+                  if (typeof workData === 'string') {
+                    return (
+                      <td
+                        key={day}
+                        className="px-3 py-4 text-sm text-neutral-500 text-center whitespace-nowrap"
+                      >
+                        {workData}
                       </td>
                     );
                   }
