@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -9,6 +9,13 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { 
+  calculateDailyWorkType, 
+  calculateWeeklyHolidayHours, 
+  calculateWage,
+  isPublicHoliday,
+  WorkType
+} from "../client/src/lib/wage-calculator";
 
 // 파일 업로드를 위한 멀터 설정
 const upload = multer({
@@ -29,6 +36,110 @@ const upload = multer({
     }
   },
 });
+
+// Helper function to get week number
+function getWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+// Helper function to group work records by week
+function groupWorkRecordsByWeek(workRecords: any[]): Record<string, any[]> {
+  const weeklyRecords: Record<string, any[]> = {};
+  
+  for (const record of workRecords) {
+    const date = new Date(record.date);
+    const yearNum = date.getFullYear();
+    const weekNum = getWeekNumber(date);
+    const weekKey = `${yearNum}-${weekNum}`;
+    
+    if (!weeklyRecords[weekKey]) {
+      weeklyRecords[weekKey] = [];
+    }
+    
+    weeklyRecords[weekKey].push(record);
+  }
+  
+  return weeklyRecords;
+}
+
+// Helper function to process weekly records and calculate weekly work stats
+function processWeeklyRecords(weekRecords: any[]): {
+  regularHours: number;
+  weekendRegularHours: number;
+  overtimeHours: number;
+  holidayHours: number;
+  holidayOvertimeHours: number;
+  absenceDays: number;
+  publicHolidayDays: number;
+  rainDays: number;
+  regularOffDays: number;
+  dayoffDays: number;
+  weekdayBasicWorkDays: number;
+} {
+  const weeklyWork = {
+    regularHours: 0,
+    weekendRegularHours: 0,
+    overtimeHours: 0,
+    holidayHours: 0,
+    holidayOvertimeHours: 0,
+    absenceDays: 0,
+    publicHolidayDays: 0,
+    rainDays: 0,
+    regularOffDays: 0,
+    dayoffDays: 0,
+    weekdayBasicWorkDays: 0
+  };
+  
+  for (const record of weekRecords) {
+    const date = new Date(record.date);
+    const dayOfWeek = date.getDay();
+    const hours = record.hours || 0;
+    
+    if (hours <= 0) {
+      continue; // Skip days with no hours
+    }
+    
+    // Count workdays (Monday-Friday)
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      weeklyWork.weekdayBasicWorkDays++;
+      
+      if (hours <= 8) {
+        weeklyWork.regularHours += hours;
+      } else {
+        weeklyWork.regularHours += 8;
+        weeklyWork.overtimeHours += (hours - 8);
+      }
+    } 
+    // Saturday
+    else if (dayOfWeek === 6) {
+      const remainingRegularHours = Math.max(0, 40 - weeklyWork.regularHours);
+      if (remainingRegularHours > 0) {
+        const regularHours = Math.min(remainingRegularHours, hours);
+        weeklyWork.weekendRegularHours += regularHours;
+        if (hours > regularHours) {
+          weeklyWork.overtimeHours += (hours - regularHours);
+        }
+      } else {
+        weeklyWork.overtimeHours += hours;
+      }
+    } 
+    // Sunday or Public Holiday
+    else if (dayOfWeek === 0 || isPublicHoliday(date)) {
+      if (hours <= 8) {
+        weeklyWork.holidayHours += hours;
+      } else {
+        weeklyWork.holidayHours += 8;
+        weeklyWork.holidayOvertimeHours += (hours - 8);
+      }
+    }
+  }
+  
+  return weeklyWork;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -205,9 +316,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Import wage calculation functions
-        const { calculateDailyWorkType, calculateWeeklyHolidayHours, calculateWage } = require('../client/src/lib/wage-calculator');
-        
         // Group work records by week
         const workRecords = await storage.getWorkRecords(worker.id);
         const weeklyWorkRecords = groupWorkRecordsByWeek(workRecords);
@@ -235,19 +343,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Accumulate different types of wages
             switch (dailyWork.type) {
-              case 'REGULAR':
+              case WorkType.REGULAR:
                 baseWage += wage;
                 break;
-              case 'OVERTIME':
+              case WorkType.OVERTIME:
                 overtimePay += wage;
                 break;
-              case 'HOLIDAY':
+              case WorkType.HOLIDAY:
                 holidayPay += wage;
                 break;
-              case 'HOLIDAY_OVERTIME':
+              case WorkType.HOLIDAY_OVERTIME:
                 holidayOvertimePay += wage;
                 break;
-              case 'PUBLIC_HOLIDAY':
+              case WorkType.PUBLIC_HOLIDAY:
                 publicHolidayPay += wage;
                 break;
             }
@@ -263,7 +371,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalHours,
           baseWage,
           overtimePay,
-          nightPay,
+          holidayPay,
+          holidayOvertimePay,
+          publicHolidayPay,
           weeklyHolidayPay,
           totalWage,
         });
