@@ -27,7 +27,7 @@ interface ResultsTableProps {
     ssn: string;
     wageType: string;
     wageAmount: number;
-    dailyHours: Record<string, { hours?: number; status?: string }>; // Changed to dailyHours
+    dailyHours: Record<string, number | string>;
     calculation: {
       totalHours: number;
       baseWage: number;
@@ -278,13 +278,13 @@ export default function ResultsTable({
 
                 {/* 일자별 근무시간 */}
                 {days.map((day) => {
-                  const workData = worker.dailyHours[day.toString()]; // Corrected line
+                  const workData = worker.dailyHours[day.toString()];
                   return (
                     <td
                       key={day}
                       className="px-3 py-4 text-sm text-neutral-500 text-center whitespace-nowrap"
                     >
-                      {workData ? (workData.hours || workData.status) : "-"}
+                      {workData ?? "-"}
                     </td>
                   );
                 })}
