@@ -27,6 +27,7 @@ export const WorkStatus = {
   WORK: '근무',
   RAIN: '우천',
   REGULAR_HOLIDAY: '정휴',
+  DAYOFF: '휴무',
   ABSENCE: '결근',
   PUBLIC_HOLIDAY: '공휴일'
 } as const;
