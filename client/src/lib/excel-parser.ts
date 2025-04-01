@@ -58,21 +58,27 @@ export async function parseExcelFile(file: File): Promise<{
             const rawStatus = value.toString().trim();
             let status;
             let isHoliday = false;
+            let isWageless = false;
 
             switch (rawStatus) {
               case '휴무':
                 status = WorkStatus.DAYOFF;
+                isWageless = true;
                 break;
               case '결근':
                 status = WorkStatus.ABSENCE;
                 break;
               case '정휴':
                 status = WorkStatus.REGULAR_HOLIDAY;
-                isHoliday = true;
+                isWageless = true;
                 break;
               case '공휴일':
                 status = WorkStatus.PUBLIC_HOLIDAY;
                 isHoliday = true;
+                break;
+              case '우천':
+                status = WorkStatus.RAINY_DAY;
+                isWageless = true;
                 break;
               default:
                 status = rawStatus;
@@ -88,7 +94,8 @@ export async function parseExcelFile(file: File): Promise<{
                 day: day,
                 hours: hours,
                 status,
-                isHoliday
+                isHoliday,
+                isWageless
               });
             }
           }
