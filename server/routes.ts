@@ -3,12 +3,101 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   insertProjectSchema, insertWorkerSchema, 
-  insertWorkRecordSchema, insertCalculationSchema 
+  insertWorkRecordSchema, insertCalculationSchema,
+  WorkRecord
 } from "@shared/schema";
 import multer from "multer";
 import * as XLSX from "xlsx";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+
+// Helper function to group work records by week
+function groupWorkRecordsByWeek(workRecords: WorkRecord[]): Record<string, WorkRecord[]> {
+  const weeklyRecords: Record<string, WorkRecord[]> = {};
+  
+  for (const record of workRecords) {
+    const date = new Date(record.date);
+    // Get the first day of the week (Sunday)
+    const weekStart = new Date(date);
+    weekStart.setDate(date.getDate() - date.getDay());
+    const weekKey = weekStart.toISOString().split('T')[0];
+    
+    if (!weeklyRecords[weekKey]) {
+      weeklyRecords[weekKey] = [];
+    }
+    weeklyRecords[weekKey].push(record);
+  }
+  
+  return weeklyRecords;
+}
+
+// Helper function to process weekly records and calculate weekly work data
+function processWeeklyRecords(weekRecords: WorkRecord[]): any {
+  // Initialize weekly work stats
+  const weeklyWork = {
+    regularHours: 0,
+    weekendRegularHours: 0,
+    overtimeHours: 0,
+    holidayHours: 0,
+    holidayOvertimeHours: 0,
+    absenceDays: 0,
+    publicHolidayDays: 0,
+    rainDays: 0,
+    regularOffDays: 0,
+    dayoffDays: 0,
+    weekdayBasicWorkDays: 0
+  };
+  
+  for (const record of weekRecords) {
+    const date = new Date(record.date);
+    const dayOfWeek = date.getDay();
+    
+    // Check for weekday (Monday-Friday)
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      if (record.hours && record.hours > 0) {
+        weeklyWork.weekdayBasicWorkDays++;
+        // Regular hours (up to 8 hours)
+        const regularHours = Math.min(8, record.hours);
+        weeklyWork.regularHours += regularHours;
+        
+        // Overtime hours (beyond 8 hours)
+        const overtimeHours = Math.max(0, record.hours - 8);
+        weeklyWork.overtimeHours += overtimeHours;
+      } else if (record.status === 'ABSENCE') {
+        weeklyWork.absenceDays++;
+      } else if (record.status === 'PUBLIC_HOLIDAY') {
+        weeklyWork.publicHolidayDays++;
+      } else if (record.status === 'RAIN') {
+        weeklyWork.rainDays++;
+      } else if (record.status === 'REGULAR_HOLIDAY') {
+        weeklyWork.regularOffDays++;
+      } else if (record.status === 'DAYOFF') {
+        weeklyWork.dayoffDays++;
+      }
+    } 
+    // Saturday
+    else if (dayOfWeek === 6) {
+      if (record.hours && record.hours > 0) {
+        // Saturday hours go to weekend regular hours
+        weeklyWork.weekendRegularHours += record.hours;
+      }
+    } 
+    // Sunday (holiday)
+    else if (dayOfWeek === 0) {
+      if (record.hours && record.hours > 0) {
+        // Regular holiday hours (up to 8 hours)
+        const regularHolidayHours = Math.min(8, record.hours);
+        weeklyWork.holidayHours += regularHolidayHours;
+        
+        // Holiday overtime (beyond 8 hours)
+        const holidayOvertimeHours = Math.max(0, record.hours - 8);
+        weeklyWork.holidayOvertimeHours += holidayOvertimeHours;
+      }
+    }
+  }
+  
+  return weeklyWork;
+}
 
 // 파일 업로드를 위한 멀터 설정
 const upload = multer({
@@ -161,15 +250,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "엑셀 파일에 날짜 컬럼이 없습니다." });
       }
       
+      // Get month details
+      const [year, month] = projectData.workMonth.split("-").map(Number);
+      const monthStart = new Date(year, month-1, 1);
+      const monthEnd = new Date(year, month, 0);  // Last day of month
+      
       // 프로젝트 생성
       const project = await storage.createProject({
         name: projectData.projectName,
-        month: projectData.workMonth,
+        startDate: monthStart,
+        endDate: monthEnd,
         fileName: req.file.originalname,
       });
       
+      // Store month info for reference
+      (project as any).month = projectData.workMonth;
+      
       // 데이터 처리 및 저장
-      const [year, month] = projectData.workMonth.split("-").map(Number);
       
       for (const row of data) {
         const typedRow = row as Record<string, any>;
@@ -263,7 +360,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalHours,
           baseWage,
           overtimePay,
-          nightPay,
+          holidayPay,
+          holidayOvertimePay,
+          publicHolidayPay,
           weeklyHolidayPay,
           totalWage,
         });

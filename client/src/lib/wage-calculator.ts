@@ -218,7 +218,7 @@ export function calculateTotalWage(
     
     // 주 단위로 주휴시간 계산 및 초기화
     if (date.getDay() === 0 || index === workDates.length - 1) {
-      const weeklyHolidayHours = calculateWeeklyHolidayHours(weeklyWork);
+      const weeklyHolidayHours = calculateWeeklyHolidayHours(weeklyWork, hourlyRate);
       totalWage += calculateWage(hourlyRate, WorkType.WEEKLY_HOLIDAY, weeklyHolidayHours);
       
       // 다음 주를 위한 초기화

@@ -65,8 +65,8 @@ export default function ResultsTable({
 
         // 일자별 근무시간 추가
         days.forEach((day) => {
-          const workData = worker.dailyHours[day.toString()]; // Corrected line
-          row[`${day}일`] = workData ? (workData.hours || workData.status) : "-";
+          const workData = worker.dailyHours[day.toString()];
+          row[`${day}일`] = workData !== undefined ? workData : "-";
         });
 
         // 계산 결과 추가
