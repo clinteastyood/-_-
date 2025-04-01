@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { ProjectWithWorkers } from "@shared/schema";
 import ResultsTable from "@/components/ResultsTable";
 import DailyWageBreakdownTable from "@/components/DailyWageBreakdownTable";
+import ComprehensiveWageTable from "@/components/ComprehensiveWageTable";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
@@ -15,7 +16,7 @@ interface ResultsPageProps {
 
 export default function ResultsPage({ projectId }: ResultsPageProps) {
   const [location, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<string>("summary");
+  const [activeTab, setActiveTab] = useState<string>("comprehensive");
   
   // 프로젝트 ID가 없으면 최신 프로젝트 목록을 불러와서 첫 번째 프로젝트로 리다이렉트
   const { data: projects } = useQuery<{ id: number }[]>({
@@ -107,13 +108,25 @@ export default function ResultsPage({ projectId }: ResultsPageProps) {
   
   return (
     <div id="results-page">
-      <Tabs defaultValue="summary" value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs defaultValue="comprehensive" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex justify-center mb-4">
           <TabsList>
+            <TabsTrigger value="comprehensive" className="text-sm">종합 내역</TabsTrigger>
             <TabsTrigger value="summary" className="text-sm">급여 요약</TabsTrigger>
-            <TabsTrigger value="daily" className="text-sm">일별 상세 내역</TabsTrigger>
+            <TabsTrigger value="daily" className="text-sm">일별 상세</TabsTrigger>
           </TabsList>
         </div>
+        
+        <TabsContent value="comprehensive">
+          <ComprehensiveWageTable
+            project={{
+              ...project,
+              formattedMonth
+            }}
+            days={days}
+            workers={workers}
+          />
+        </TabsContent>
         
         <TabsContent value="summary">
           <ResultsTable 
