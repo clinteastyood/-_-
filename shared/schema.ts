@@ -101,6 +101,8 @@ export type Calculation = {
   publicHolidayPay: number;
   weeklyHolidayPay: number;
   totalWage: number;
+  weeklyHolidayPay: number;
+  totalWage: number;
 };
 
 // 프론트엔드에 표시될 결과 타입 (조인된 데이터)

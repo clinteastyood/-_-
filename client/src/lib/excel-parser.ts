@@ -57,48 +57,40 @@ export async function parseExcelFile(file: File): Promise<{
             if(value === undefined) continue;
             const rawStatus = value.toString().trim();
             let status;
-            let isHoliday = false;
-            let isWageless = false;
+            let hours = 0;
 
-            switch (rawStatus) {
+            switch (rawStatus.toLowerCase()) {
               case '휴무':
-                status = WorkStatus.DAYOFF;
-                isWageless = true;
+                status = 'DAYOFF';
                 break;
               case '결근':
-                status = WorkStatus.ABSENCE;
-                isWageless = true;
+                status = 'ABSENT';
                 break;
               case '정휴':
-                status = WorkStatus.REGULAR_HOLIDAY;
-                isWageless = true;
+                status = 'REGULAR_OFF';
                 break;
               case '공휴일':
-                status = WorkStatus.PUBLIC_HOLIDAY;
-                isHoliday = true;
+                status = 'PUBLIC_HOLIDAY';
                 break;
               case '우천':
-                status = WorkStatus.RAINY_DAY;
-                isWageless = true;
+                status = 'RAIN_OFF';
                 break;
               default:
-                status = rawStatus;
+                status = 'REGULAR';
+                hours = Number(value || 0);
             }
 
-            const hours = Number(value || 0);
-            if (hours > 0 || status !== '0') { //check if hours >0 or status is not 0
-              const dayStr = day.toString();
-              workHoursData[dayStr] = { status };
-              workHours.push({
-                workerId: 0, // Will be set later
-                projectId: 0, // Will be set later
-                day: day,
-                hours: hours,
-                status,
-                isHoliday,
-                isWageless
-              });
-            }
+            const workHour: InsertWorkHour = {
+              workerId: 0, // Will be set later
+              projectId: 0, // Will be set later
+              day: day,
+              hours: hours,
+              status: status,
+              isHoliday: status === 'PUBLIC_HOLIDAY',
+              isWageless: status !== 'REGULAR'
+            };
+
+            workHours.push(workHour);
           }
         }
 
@@ -148,7 +140,8 @@ export async function downloadExcel(project: ProjectWithWorkers): Promise<void> 
 
     // Add work hours for each day
     daysInMonth.forEach(day => {
-      row.push(worker.workHours[day] || 0);
+      const workHour = worker.workHours.find(wh => wh.day === parseInt(day));
+      row.push(workHour ? workHour.hours : 0);
     });
 
     // Add total wage

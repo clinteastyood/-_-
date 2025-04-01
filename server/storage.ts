@@ -164,6 +164,8 @@ export class MemStorage implements IStorage {
     publicHolidayPay: number;
     weeklyHolidayPay: number;
     totalWage: number;
+    regularHours?: number;
+    weekendRegularHours?: number;
   }): Promise<Calculation> {
     const id = this.calculationCurrentId++;
     const newCalculation: Calculation = { ...calculation, id };
