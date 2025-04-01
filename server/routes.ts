@@ -6,21 +6,6 @@ import {
   insertWorkRecordSchema, insertCalculationSchema 
 } from "@shared/schema";
 import multer from "multer";
-
-// Add getWeek method to Date prototype
-declare global {
-  interface Date {
-    getWeek(): number;
-  }
-}
-
-Date.prototype.getWeek = function(): number {
-  const d = new Date(Date.UTC(this.getFullYear(), this.getMonth(), this.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1)/7);
-};
 import * as XLSX from "xlsx";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -221,21 +206,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Import wage calculation functions
-        import { calculateDailyWorkType, calculateWeeklyHolidayHours, calculateWage } from '../client/src/lib/wage-calculator.js';
+        const { calculateDailyWorkType, calculateWeeklyHolidayHours, calculateWage } = require('../client/src/lib/wage-calculator');
         
         // Group work records by week
         const workRecords = await storage.getWorkRecords(worker.id);
-        const groupWorkRecordsByWeek = (records: any[]) => {
-          const weeks: Record<string, any[]> = {};
-          records.forEach(record => {
-            const date = new Date(record.date);
-            const weekKey = `${date.getFullYear()}-${date.getWeek()}`;
-            if (!weeks[weekKey]) weeks[weekKey] = [];
-            weeks[weekKey].push(record);
-          });
-          return weeks;
-        };
-        
         const weeklyWorkRecords = groupWorkRecordsByWeek(workRecords);
         
         let totalWage = 0;
@@ -248,14 +222,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Calculate wages for each week
         for (const weekRecords of Object.values(weeklyWorkRecords)) {
-          const processWeeklyRecords = (records: any[]) => {
-            return records.reduce((acc, record) => {
-              const date = new Date(record.date);
-              acc[date.getDay()] = record.hours;
-              return acc;
-            }, {});
-          };
-          
           const weeklyWork = processWeeklyRecords(weekRecords);
           const weeklyHolidayHours = calculateWeeklyHolidayHours(weeklyWork, worker.wageAmount);
           
