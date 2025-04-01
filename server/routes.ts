@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -9,14 +9,6 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
-import { 
-  calculateDailyWorkType, 
-  calculateWeeklyHolidayHours, 
-  calculateWage,
-  groupWorkRecordsByWeek,
-  processWeeklyRecords,
-  WorkType
-} from "./utils/wage-calculator";
 
 // 파일 업로드를 위한 멀터 설정
 const upload = multer({
@@ -213,7 +205,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Wage calculation functions are already imported at the top of this file
+        // Import wage calculation functions
+        const { calculateDailyWorkType, calculateWeeklyHolidayHours, calculateWage } = require('../client/src/lib/wage-calculator');
         
         // Group work records by week
         const workRecords = await storage.getWorkRecords(worker.id);
@@ -242,19 +235,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Accumulate different types of wages
             switch (dailyWork.type) {
-              case WorkType.REGULAR:
+              case 'REGULAR':
                 baseWage += wage;
                 break;
-              case WorkType.OVERTIME:
+              case 'OVERTIME':
                 overtimePay += wage;
                 break;
-              case WorkType.HOLIDAY:
+              case 'HOLIDAY':
                 holidayPay += wage;
                 break;
-              case WorkType.HOLIDAY_OVERTIME:
+              case 'HOLIDAY_OVERTIME':
                 holidayOvertimePay += wage;
                 break;
-              case WorkType.PUBLIC_HOLIDAY:
+              case 'PUBLIC_HOLIDAY':
                 publicHolidayPay += wage;
                 break;
             }
@@ -270,9 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalHours,
           baseWage,
           overtimePay,
-          holidayPay,
-          holidayOvertimePay,
-          publicHolidayPay,
+          nightPay,
           weeklyHolidayPay,
           totalWage,
         });
