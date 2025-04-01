@@ -86,9 +86,41 @@ export async function parseExcelFile(file: File): Promise<{
             }
 
             const hours = Number(value || 0);
-            if (hours > 0 || status !== '0') { //check if hours >0 or status is not 0
+            if (hours > 0 || status !== '0') {
               const dayStr = day.toString();
-              workHoursData[dayStr] = { status };
+              let workData;
+
+              // Handle wageless days
+              if (isWageless) {
+                workData = status;
+              }
+              // Handle public holidays
+              else if (isHoliday) {
+                if (hours > 8) {
+                  workData = {
+                    holiday: 8,
+                    holidayOvertime: hours - 8
+                  };
+                } else {
+                  workData = {
+                    holiday: hours
+                  };
+                }
+              }
+              // Handle regular work days
+              else if (hours > 0) {
+                if (hours > 8) {
+                  workData = {
+                    regular: 8,
+                    overtime: hours - 8
+                  };
+                } else {
+                  workData = {
+                    regular: hours
+                  };
+                }
+              }
+
               workHours.push({
                 workerId: 0, // Will be set later
                 projectId: 0, // Will be set later
@@ -96,7 +128,8 @@ export async function parseExcelFile(file: File): Promise<{
                 hours: hours,
                 status,
                 isHoliday,
-                isWageless
+                isWageless,
+                workData
               });
             }
           }
