@@ -101,8 +101,7 @@ export type Calculation = {
   publicHolidayPay: number;
   weeklyHolidayPay: number;
   totalWage: number;
-};pe Calculation = typeof calculations.$inferSelect;
-
+};
 // 프론트엔드에 표시될 결과 타입 (조인된 데이터)
 export type WorkerWithCalculation = Worker & {
   calculation: Calculation;
