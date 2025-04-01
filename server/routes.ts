@@ -206,7 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Import wage calculation functions
-        const { calculateDailyWorkType, calculateWeeklyHolidayHours, calculateWage } = require('../client/src/lib/wage-calculator');
+        import { calculateDailyWorkType, calculateWeeklyHolidayHours, calculateWage } from '../client/src/lib/wage-calculator.js';
         
         // Group work records by week
         const workRecords = await storage.getWorkRecords(worker.id);

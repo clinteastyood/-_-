@@ -154,6 +154,8 @@ export function calculateWeeklyHolidayHours(weeklyWork: WeeklyWork, hourlyRate: 
 /**
  * 급여 계산
  */
+export { calculateDailyWorkType, calculateWeeklyHolidayHours };
+
 export function calculateWage(
   hourlyRate: number,
   workType: WorkType,
