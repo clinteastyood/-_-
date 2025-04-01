@@ -1,11 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { ProjectWithWorkers } from "@shared/schema";
 import ResultsTable from "@/components/ResultsTable";
+import DailyWageBreakdownTable from "@/components/DailyWageBreakdownTable";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ResultsPageProps {
   projectId?: string;
@@ -13,6 +15,7 @@ interface ResultsPageProps {
 
 export default function ResultsPage({ projectId }: ResultsPageProps) {
   const [location, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState<string>("summary");
   
   // 프로젝트 ID가 없으면 최신 프로젝트 목록을 불러와서 첫 번째 프로젝트로 리다이렉트
   const { data: projects } = useQuery<{ id: number }[]>({
@@ -45,6 +48,9 @@ export default function ResultsPage({ projectId }: ResultsPageProps) {
         nightPay: number;
         weeklyHolidayPay: number;
         totalWage: number;
+        holidayPay: number;
+        holidayOvertimePay: number;
+        publicHolidayPay: number;
       };
     }[];
   }>({
@@ -101,14 +107,36 @@ export default function ResultsPage({ projectId }: ResultsPageProps) {
   
   return (
     <div id="results-page">
-      <ResultsTable 
-        project={{
-          ...project,
-          formattedMonth
-        }}
-        days={days}
-        workers={workers}
-      />
+      <Tabs defaultValue="summary" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="flex justify-center mb-4">
+          <TabsList>
+            <TabsTrigger value="summary" className="text-sm">급여 요약</TabsTrigger>
+            <TabsTrigger value="daily" className="text-sm">일별 상세 내역</TabsTrigger>
+          </TabsList>
+        </div>
+        
+        <TabsContent value="summary">
+          <ResultsTable 
+            project={{
+              ...project,
+              formattedMonth
+            }}
+            days={days}
+            workers={workers}
+          />
+        </TabsContent>
+        
+        <TabsContent value="daily">
+          <DailyWageBreakdownTable
+            project={{
+              ...project,
+              formattedMonth
+            }}
+            days={days}
+            workers={workers}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
