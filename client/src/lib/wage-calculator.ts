@@ -21,12 +21,17 @@ interface DailyWork {
 
 // 주간 근무 시간 계산을 위한 인터페이스 // 수정필요! absencedays = irrelevant; publicholidayHours: number; rainOffHours: number; regularOffHours: number 등등 계산식과 규칙에 따라가야함. 
 interface WeeklyWork {
-  regularHours: number;
-  weekendRegularHours: number;
+  regularHours: number; // 월~금 기본근무시간
+  weekendRegularHours: number; // 토요일 기본근무시간
   overtimeHours: number;
   holidayHours: number;
   holidayOvertimeHours: number;
   absenceDays: number;
+  publicHolidayDays: number; // 공휴일 수
+  rainDays: number; // 우천 수
+  regularOffDays: number; // 정휴 수
+  dayoffDays: number; // 휴무 수
+  weekdayBasicWorkDays: number; // 월~금 중 실제 근무한 날 수
 }
 
 /**
@@ -114,17 +119,36 @@ export function calculateDailyWorkType(
 /**
  * 주휴시간 계산
  */
-export function calculateWeeklyHolidayHours(weeklyWork: WeeklyWork): number {
+export function calculateWeeklyHolidayHours(weeklyWork: WeeklyWork, hourlyRate: number): number {
+  // 1. 결근이 있는 경우 미지급
   if (weeklyWork.absenceDays > 0) {
     return 0;
   }
 
-  const totalRegularHours = weeklyWork.regularHours + weeklyWork.weekendRegularHours;
-  if (totalRegularHours >= 40) {
-    return 8;
+  // 2. 월~금이 모두 공휴일/우천/정휴/휴무인 경우 미지급
+  const nonWorkingDays = weeklyWork.publicHolidayDays + weeklyWork.rainDays + 
+                        weeklyWork.regularOffDays + weeklyWork.dayoffDays;
+  if (nonWorkingDays >= 5) {
+    return 0;
   }
 
-  return Math.min(Math.floor(totalRegularHours / 8) * 8, 40);
+  // 3. 소정근로일(월~금 중 공휴일/우천/정휴/휴무 제외한 날) 개근 체크
+  const requiredWorkDays = 5 - nonWorkingDays;
+  if (weeklyWork.weekdayBasicWorkDays < requiredWorkDays) {
+    return 0;
+  }
+
+  // 4. 기본근무시간 계산 (월~금 + 필요시 토요일)
+  const totalBasicHours = Math.min(40, weeklyWork.regularHours + weeklyWork.weekendRegularHours);
+  
+  // 5. 주 15시간 이상 체크
+  if (totalBasicHours < 15) {
+    return 0;
+  }
+
+  // 6. 주휴수당 계산: (총 기본근무시간/40) * 8 * 시급
+  const weeklyHolidayHours = (totalBasicHours / 40) * 8;
+  return Math.min(weeklyHolidayHours, 8); // 최대 8시간으로 제한
 }
 
 /**
