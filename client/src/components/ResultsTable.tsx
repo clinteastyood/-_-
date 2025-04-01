@@ -279,12 +279,55 @@ export default function ResultsTable({
                 {/* 일자별 근무시간 */}
                 {days.map((day) => {
                   const workData = worker.dailyHours[day.toString()];
+                  
+                  // Handle special statuses (우천, 결근, 휴무, 정휴)
+                  if (typeof workData === 'string') {
+                    return (
+                      <td
+                        key={day}
+                        className="px-3 py-4 text-sm text-neutral-500 text-center whitespace-nowrap"
+                      >
+                        {workData}
+                      </td>
+                    );
+                  }
+
+                  // Handle work hours with types
+                  if (typeof workData === 'object' && workData !== null) {
+                    const parts = [];
+                    
+                    if (workData.regular > 0) {
+                      parts.push(`기본 ${workData.regular.toFixed(1)}`);
+                    }
+                    if (workData.overtime > 0) {
+                      parts.push(`연장 ${workData.overtime.toFixed(1)}`);
+                    }
+                    if (workData.holiday > 0) {
+                      parts.push(`휴일 ${workData.holiday.toFixed(1)}`);
+                    }
+                    if (workData.holidayOvertime > 0) {
+                      parts.push(`휴일연장 ${workData.holidayOvertime.toFixed(1)}`);
+                    }
+                    if (workData.publicHoliday > 0) {
+                      parts.push(`공휴일 ${workData.publicHoliday.toFixed(1)}`);
+                    }
+                    
+                    return (
+                      <td
+                        key={day}
+                        className="px-3 py-4 text-sm text-neutral-500 text-center whitespace-nowrap"
+                      >
+                        {parts.length > 0 ? parts.join(' + ') : '-'}
+                      </td>
+                    );
+                  }
+
                   return (
                     <td
                       key={day}
                       className="px-3 py-4 text-sm text-neutral-500 text-center whitespace-nowrap"
                     >
-                      {workData ?? "-"}
+                      -
                     </td>
                   );
                 })}
