@@ -19,14 +19,14 @@ interface DailyWork {
   hours: number;
 }
 
-// 주간 근무 시간 계산을 위한 인터페이스 // 수정필요! absencedays = irrelevant; publicholidayHours: number; rainOffHours: number; regularOffHours: number 등등 계산식과 규칙에 따라가야함. 
+// 주간 근무 시간 계산을 위한 인터페이스 // 
 interface WeeklyWork {
   regularHours: number; // 월~금 기본근무시간
   weekendRegularHours: number; // 토요일 기본근무시간
-  overtimeHours: number;
-  holidayHours: number;
-  holidayOvertimeHours: number;
-  absenceDays: number;
+  overtimeHours: number; // 연장근무시간
+  holidayHours: number; // 휴일근무시간 (일요일 혹은 공휴일))
+  holidayOvertimeHours: number; //휴일의 연장근무시간
+  absenceDays: number; // 결근일 수 
   publicHolidayDays: number; // 공휴일 수
   rainDays: number; // 우천 수
   regularOffDays: number; // 정휴 수
@@ -125,7 +125,7 @@ export function calculateWeeklyHolidayHours(weeklyWork: WeeklyWork, hourlyRate: 
     return 0;
   }
 
-  // 2. 월~금이 모두 공휴일/우천/정휴/휴무인 경우 미지급
+  // 2. 월~금이 모두 공휴일/우천/정휴/휴무인 경우 미지급 -> $$$ nonWorkingDays가 아니라 공휴일인 경우에만 인지 확인 필요
   const nonWorkingDays = weeklyWork.publicHolidayDays + weeklyWork.rainDays + 
                         weeklyWork.regularOffDays + weeklyWork.dayoffDays;
   if (nonWorkingDays >= 5) {
@@ -148,7 +148,7 @@ export function calculateWeeklyHolidayHours(weeklyWork: WeeklyWork, hourlyRate: 
 
   // 6. 주휴수당 계산: (총 기본근무시간/40) * 8 * 시급
   const weeklyHolidayHours = (totalBasicHours / 40) * 8;
-  return Math.min(weeklyHolidayHours, 8); // 최대 8시간으로 제한
+  return Math.min(weeklyHolidayHours, 8); // 최대 8시간으로 제한 -> $$$ 사실 필요없을텐데 빼는게 맞을지 필요
 }
 
 /**
