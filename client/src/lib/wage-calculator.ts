@@ -137,10 +137,11 @@ export function calculateWage(
       return hourlyRate * hours;
     case WorkType.PUBLIC_HOLIDAY:
       return hourlyRate * 8; // 공휴일은 8시간 기준
+    case WorkType.ABSENT: 
     case WorkType.RAIN:
     case WorkType.DAYOFF:
     case WorkType.REGULAR_OFF:
-      return 0; // 우천, 휴무, 정휴는 무급
+      return 0; // 결근, 우천, 휴무, 정휴는 무급
     default:
       return 0;
   }

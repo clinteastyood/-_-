@@ -67,6 +67,7 @@ export async function parseExcelFile(file: File): Promise<{
                 break;
               case '결근':
                 status = WorkStatus.ABSENCE;
+                isWageless = true;
                 break;
               case '정휴':
                 status = WorkStatus.REGULAR_HOLIDAY;
