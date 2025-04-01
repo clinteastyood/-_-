@@ -70,30 +70,41 @@ export function calculateDailyWorkType(
 
   // 평일(월-금) 근무
   if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-    if (hours > 8) {
-      return {
-        type: WorkType.OVERTIME,
-        hours: hours
-      };
-    }
+    const regularHours = Math.min(8, hours); // 하루 최대 8시간까지 기본근로
+    const overtimeHours = Math.max(0, hours - 8); // 8시간 초과분은 연장근로
+
     return {
-      type: WorkType.REGULAR,
-      hours: hours
+      type: overtimeHours > 0 ? WorkType.OVERTIME : WorkType.REGULAR,
+      hours: hours,
+      regularHours: regularHours,
+      overtimeHours: overtimeHours
     };
   }
 
   // 토요일 근무
   if (dayOfWeek === 6) {
-    const totalWeekRegularHours = weeklyWork.regularHours + hours;
-    if (totalWeekRegularHours <= 40) {
+    const weekRegularHours = weeklyWork.regularHours;
+    const remainingRegularHours = Math.max(0, 40 - weekRegularHours);
+    
+    // 월~금 근로시간이 40시간 미만인 경우, 토요일 근무시간을 기본근로에 포함
+    if (remainingRegularHours > 0) {
+      const regularHours = Math.min(remainingRegularHours, hours);
+      const overtimeHours = Math.max(0, hours - regularHours);
+      
       return {
-        type: WorkType.REGULAR,
-        hours: hours
+        type: overtimeHours > 0 ? WorkType.OVERTIME : WorkType.REGULAR,
+        hours: hours,
+        regularHours: regularHours,
+        overtimeHours: overtimeHours
       };
     }
+    
+    // 이미 40시간을 채웠다면 모든 시간은 연장근로
     return {
       type: WorkType.OVERTIME,
-      hours: hours
+      hours: hours,
+      regularHours: 0,
+      overtimeHours: hours
     };
   }
 
