@@ -205,51 +205,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // 급여 계산
-        // 기본 계산 - 실제로는 더 복잡한 한국 노동법 규정 적용 필요
-        const { wageType, wageAmount } = worker;
+        // Import wage calculation functions
+        const { calculateDailyWorkType, calculateWeeklyHolidayHours, calculateWage } = require('../client/src/lib/wage-calculator');
+        
+        // Group work records by week
+        const workRecords = await storage.getWorkRecords(worker.id);
+        const weeklyWorkRecords = groupWorkRecordsByWeek(workRecords);
+        
+        let totalWage = 0;
         let baseWage = 0;
         let overtimePay = 0;
-        let nightPay = 0;
+        let holidayPay = 0;
+        let holidayOvertimePay = 0;
+        let publicHolidayPay = 0;
         let weeklyHolidayPay = 0;
         
-        if (wageType === "시급") {
-          // 시급 계산
-          const standardHours = 40; // 주 40시간 기준
+        // Calculate wages for each week
+        for (const weekRecords of Object.values(weeklyWorkRecords)) {
+          const weeklyWork = processWeeklyRecords(weekRecords);
+          const weeklyHolidayHours = calculateWeeklyHolidayHours(weeklyWork, worker.wageAmount);
           
-          baseWage = wageAmount * totalHours;
+          // Add weekly holiday pay
+          weeklyHolidayPay += weeklyHolidayHours * worker.wageAmount;
           
-          // 간단한 초과근무수당 계산 - 주 40시간 초과는 50% 할증
-          if (totalHours > standardHours) {
-            const overtimeHours = totalHours - standardHours;
-            overtimePay = Math.round(overtimeHours * wageAmount * 0.5);
+          // Process each day's work
+          for (const record of weekRecords) {
+            const dailyWork = calculateDailyWorkType(new Date(record.date), record.hours, weeklyWork);
+            const wage = calculateWage(worker.wageAmount, dailyWork.type, dailyWork.hours);
+            
+            // Accumulate different types of wages
+            switch (dailyWork.type) {
+              case 'REGULAR':
+                baseWage += wage;
+                break;
+              case 'OVERTIME':
+                overtimePay += wage;
+                break;
+              case 'HOLIDAY':
+                holidayPay += wage;
+                break;
+              case 'HOLIDAY_OVERTIME':
+                holidayOvertimePay += wage;
+                break;
+              case 'PUBLIC_HOLIDAY':
+                publicHolidayPay += wage;
+                break;
+            }
           }
-          
-          // 주휴수당 - 주 15시간 이상 근무 시 1일 임금 (간단한 계산)
-          if (totalHours >= 15) {
-            weeklyHolidayPay = wageAmount * 8; // 1일 8시간 기준
-          }
-          
-          // 야간수당은 0으로 설정 (데이터에 야간근무 정보가 없음)
-          nightPay = 0;
-        } else if (wageType === "일급") {
-          // 일급 계산
-          baseWage = wageAmount * daysWorked;
-          
-          // 주휴수당 - 주 5일 이상 근무 시 1일 임금
-          if (daysWorked >= 5) {
-            weeklyHolidayPay = wageAmount;
-          }
-          
-          // 기본적으로 일급은 초과수당이 포함되어 있다고 가정
-          overtimePay = 0;
-          
-          // 야간수당 - 임의 설정 (실제로는 야간근무 여부에 따라 계산)
-          nightPay = 0;
         }
         
-        // 총 급여
-        const totalWage = baseWage + overtimePay + nightPay + weeklyHolidayPay;
+        // Calculate total wage
+        totalWage = baseWage + overtimePay + holidayPay + holidayOvertimePay + publicHolidayPay + weeklyHolidayPay;
         
         // 계산 결과 저장
         await storage.createCalculation({

@@ -90,7 +90,18 @@ export type ExcelUpload = z.infer<typeof excelUploadSchema>;
 export type Project = typeof projects.$inferSelect;
 export type Worker = typeof workers.$inferSelect;
 export type WorkRecord = typeof workRecords.$inferSelect;
-export type Calculation = typeof calculations.$inferSelect;
+export type Calculation = {
+  id: number;
+  workerId: number;
+  totalHours: number;
+  baseWage: number;
+  overtimePay: number;
+  holidayPay: number;
+  holidayOvertimePay: number;
+  publicHolidayPay: number;
+  weeklyHolidayPay: number;
+  totalWage: number;
+};pe Calculation = typeof calculations.$inferSelect;
 
 // 프론트엔드에 표시될 결과 타입 (조인된 데이터)
 export type WorkerWithCalculation = Worker & {
